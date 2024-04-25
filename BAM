@@ -1,44 +1,64 @@
-import numpy as np
-import random
-import math
-X1 = [1, 1, 1, 1, 1, 1]
-X2 = [-1, -1, -1, -1, -1, -1]
-X3 = [1, -1, -1, 1, 1, 1]
-X4 = [1, 1, -1, -1, -1, -1]
-X = np.array([X1, X2, X3, X4])
+# Load the data
 
-Y1 = [1, 1, 1]
-Y2 = [-1, -1, -1]
-Y3 = [-1, 1, 1]
-Y4 = [1, -1, 1]
-Y = np.array([Y1, Y2, Y3, Y4])
+install.packages(c("factoextra","cluster","NbClust"))
+library(factoextra)
+library(cluster)
+library(NbClust)
+data("USArrests")
+# Standardize the data
+df <- scale(USArrests)
 
-print("X = ", X)
-print("\nY = ", Y)
-print("\nDimensions of X: ", X.shape)
-print("\nDimensions of Y: ", Y.shape)
-weight = np.dot(X.T, Y)
-print('Weights = \n', weight, end = "")
+# Show the first 6 rows
+head(df, nrow = 6)
+# Compute the dissimilarity matrix
+# df = the standardized data
+res.dist <- dist(df, method = "euclidean")
+res.dist
+as.matrix(res.dist)[1:6, 1:6]
 
-print(f"\nDimensions of Weight Matrix: {weight.shape}")
-def BipolarActivation(matrix, weight):
-    matrix[matrix > 0] = 1
-    matrix[matrix <= 0] = -1
-    return np.array(matrix)
-def backward(Y, weight):
-  x = np.dot(Y, weight.T)
-  return BipolarActivation(x, weight)
+kmeans(df, centers=2, iter.max = 10, nstart = 25)
+kmeans(df, centers=3, iter.max = 10, nstart = 25)
+kmeans(df, centers=4, iter.max = 10, nstart = 25)
+kmeans(df, centers=5, iter.max = 10, nstart = 25)
 
-print(f"weight * Y1 =  {backward(Y1, weight)} & X1 = {X1} {np.array_equiv(backward(Y1, weight),X1)}")
-print(f"weight * Y2 = {backward(Y2, weight)} & X2 = {X2} {np.array_equiv(backward(Y2, weight),X2)}")
-print(f"weight * Y3 = {backward(Y3, weight)} & X3 = {X3} {np.array_equiv(backward(Y3, weight),X3)}")
-print(f"weight * Y4 = {backward(Y4, weight)} & X4 = {X4} {np.array_equiv(backward(Y4, weight),X4)}")
+fviz_nbclust(df, kmeans, method = "wss")+ geom_vline(xintercept = 4, linetype = 2)
 
-def forward(X, weight):
-  Y = np.dot(weight.T, X)
-  return BipolarActivation(Y, weight)
+set.seed(123)
+km.res <- kmeans(df, 4, nstart = 25)
+# Print the results 
+print(km.res)
 
-print(f"weight * X1 =  {forward(X1, weight)} & Y1 = {Y1} {np.array_equiv(forward(X1, weight),Y1)}")
-print(f"weight * X2 =  {forward(X2, weight)} & Y2 = {Y2} {np.array_equiv(forward(X2, weight),Y2)}")
-print(f"weight * X3 =  {forward(X3, weight)} & Y3 = {Y3} {np.array_equiv(forward(X3, weight),Y3)}")
-print(f"weight * X4 =  {forward(X4, weight)} & Y4 = {Y4} {np.array_equiv(forward(X4, weight),Y4)}")
+#To find mean of the each variable
+aggregate(df, by=list(cluster=km.res$cluster), mean)
+dd <- cbind(df, cluster = km.res$cluster) 
+head(dd)
+table(km.res$cluster)
+
+km.res$size
+
+#To represent in diagram
+fviz_cluster(km.res, data = df, palette = c("#2E9FDF", "#00AFBB", "#E7B800", "#FC4E07")
+             ,ellipse.type = "euclid",  star.plot = TRUE,  repel = TRUE,  ggtheme = theme_minimal() )
+
+fviz_cluster(km.res, data = df, palette = c("set2"), ellipse.type = "euclid",  star.plot = TRUE, 
+             repel = TRUE,  ggtheme = theme_minimal() )        
+
+
+#Hierarchical clustering
+res.hc <- hclust(d = res.dist, method = "ward.D2")
+print(res.hc)
+#cex: label size
+install.packages("factoextra")
+library("factoextra")
+fviz_dend(res.hc, cex = 0.5)
+# Compute cophentic distance
+res.coph <- cophenetic(res.hc)
+# Correlation between cophenetic distance and
+# the original distance
+cor(res.dist, res.coph)
+res.hc2 <- hclust(res.dist, method = "average")
+cor(res.dist, cophenetic(res.hc2))
+grp <- cutree(res.hc, k = 4)
+head(grp, n = 4)
+table(grp)
+
