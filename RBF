@@ -1,0 +1,182 @@
+import numpy as np 
+
+import pandas as pd 
+
+import math 
+
+from sklearn.preprocessing import LabelEncoder 
+
+from sklearn.preprocessing import StandardScaler 
+
+from sklearn.model_selection import train_test_split 
+
+from sklearn.metrics import accuracy_score 
+
+from sklearn.cluster import KMeans 
+
+ 
+
+data = pd.read_csv("Bank-full.csv")  
+
+Data 
+ 
+
+col = ["age","balance","day","duration","campaign","pdays","previous"] 
+
+data_encode = data.drop(col , axis= 1) 
+
+data_encode= data_encode.apply(LabelEncoder().fit_transform) 
+
+data_rest = data[col] 
+
+data_rest 
+
+data= pd.concat([data_rest,data_encode], axis= 1) 
+
+data 
+
+ 
+
+ 
+
+#split into train and test 
+
+data_train, data_test= train_test_split(data, test_size= 0.33, random_state= 4) 
+
+X_train= data_train.drop("Target", axis= 1) 
+
+Y_train= data_train["Target"] 
+
+X_test= data_test.drop("Target", axis=1) 
+
+Y_test= data_test["Target"] 
+
+ 
+
+ 
+
+scaler= StandardScaler() 
+
+scaler.fit(X_train) 
+
+X_train= scaler.transform(X_train) 
+
+X_test= scaler.transform(X_test) 
+
+ 
+
+#KMeans 
+
+scaler= StandardScaler() 
+
+scaler.fit(X_train) 
+
+X_train= scaler.transform(X_train) 
+
+X_test= scaler.transform(X_test) 
+
+ 
+
+K_cent= 8 
+
+km= KMeans(n_clusters= K_cent, max_iter= 100) 
+
+km.fit(X_train) 
+
+cent= km.cluster_centers_ 
+
+  
+
+max = 0 
+
+for i in range(K_cent): 
+
+    for j in range(K_cent): 
+
+        d = np.linalg.norm(cent[i]-cent[j]) 
+
+        if(d> max): 
+
+            max=d 
+
+d= max 
+
+print(d) 
+
+sigma= d/math.sqrt(2*K_cent) 
+
+print(sigma) 
+
+ 
+
+d : 9.409004500040503 
+ 
+
+sigma 2.3522511250101257 
+
+ 
+
+row = X_train.shape[0] 
+
+column= K_cent 
+
+G = np.empty((row,column),dtype = float) 
+
+for i in range(row): 
+
+    for j in range(column): 
+
+        dist = np.linalg.norm(X_train[i]-cent[j]) 
+
+        G[i][j] = math.exp(-math.pow(dist,2) / math.pow(2*sigma,2)) 
+
+G 
+
+ 
+
+ 
+
+GTG = np.dot(G.T,G) 
+
+#GTG 
+
+GTG_inv = np.linalg.inv(GTG) 
+
+#GTG_inv 
+
+fac = np.dot(GTG_inv,G.T) 
+
+w = np.dot(fac,Y_train) 
+
+W 
+
+ 
+
+ 
+
+row= X_test.shape[0] 
+
+column= K_cent 
+
+G_test= np.empty((row,column), dtype= float) 
+
+for i in range(row): 
+
+    for j in range(column): 
+
+        dist= np.linalg.norm(X_test[i]-cent[j]) 
+
+        G_test[i][j]= math.exp(-math.pow(dist,2)/math.pow(2*sigma,2)) 
+
+ 
+
+prediction= np.dot(G_test,w) 
+
+prediction= 0.5*(np.sign(prediction-0.5)+1) 
+
+  
+
+score= accuracy_score(prediction,Y_test) 
+
+print("Accuracy : ",score.mean()) 
+
