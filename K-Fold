@@ -1,49 +1,33 @@
-from numpy import mean,std 
-import numpy as np 
-from sklearn.linear_model import LogisticRegression 
-from sklearn.model_selection import KFold 
-from sklearn.model_selection import cross_val_score 
-from sklearn.datasets import make_classification 
-from sklearn.model_selection import LeaveOneOut 
-from matplotlib import pyplot 
-def get_dataset(n_samples=100): 
-    X, y = make_classification(n_samples=n_samples, n_features=8, n_informative=5, n_redundant=3, random_state=1) 
-    return X, y
+from sklearn.neural_network import MLPClassifier
+from sklearn.model_selection import KFold
+from sklearn.metrics import accuracy_score
+import numpy as np
 
-# create model 
-def get_model(): 
-    model = LogisticRegression() 
-    return model  
-  
-# evaluate model 
-def evaluate_model(cv): 
-    X,y = get_dataset() 
-    model = get_model() 
-    scores = cross_val_score(model, X, y, scoring='accuracy', cv=cv, n_jobs=-1) 
-    return mean(scores) , scores.min() , scores.max() 
+# Generate some sample data for demonstration
+X = np.random.rand(100, 10)  # Sample feature matrix
+y = np.random.randint(2, size=100)  # Sample target vector
 
-# calculate the ideal test condition without LeaveOneOut() 
-ideal, _, _ = evaluate_model(KFold(n_splits = 10,random_state=1,shuffle=True)) 
-print('Ideal: %.3f' % ideal) 
+# Initialize MLP classifier
+mlp = MLPClassifier(hidden_layer_sizes=(10, 10), activation='relu', solver='adam',
+                    alpha=1e-5, learning_rate_init=0.001, max_iter=1000)
+# Initialize KFold cross-validator
+kf = KFold(n_splits=5, shuffle=True, random_state=42)
 
-# define folds to test 
-folds = range(2,31) 
+# Lists to store accuracy scores for each fold
+accuracy_scores = []
 
-# record mean and min/max of each set of results 
-means, mins, maxs = list(),list(),list() 
-  
-#evaluate each k value 
-for k in folds: 
-    #define the test condation 
-    cv = KFold(n_splits=k , shuffle=True , random_state = 1) 
-    k_mean , k_min , k_max = evaluate_model(cv) 
-    print('> Folds = %d , accuracy = %.3f (%.3f,%.3f)' % (k,k_mean,k_min,k_max)) 
-    means.append(k_mean) 
-    mins.append(k_mean - k_min) 
-    maxs.append(k_max - k_mean) 
-  
-# line plot of k mean values with min/max error bars 
-pyplot.errorbar(folds, means, yerr=[mins, maxs], fmt='o') 
-# plot the ideal case in a separate color 
-pyplot.plot(folds, [ideal for _ in range(len(folds))], color='r') 
-pyplot.show() 
+# Perform KFold cross-validation
+for train_index, test_index in kf.split(X):
+    X_train, X_test = X[train_index], X[test_index]
+    y_train, y_test = y[train_index], y[test_index]
+    # Train MLP classifier
+    mlp.fit(X_train, y_train)
+    # Predict on the test set
+    y_pred = mlp.predict(X_test)
+    # Calculate accuracy and store it
+    accuracy = accuracy_score(y_test, y_pred)
+    accuracy_scores.append(accuracy)
+
+# Calculate average accuracy across all folds
+avg_accuracy = np.mean(accuracy_scores)
+print("Average accuracy:", avg_accuracy)
